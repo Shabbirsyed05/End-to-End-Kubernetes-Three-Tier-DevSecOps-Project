@@ -8,9 +8,9 @@ security -> 8080 , 9000 ,22(here for our convinent but in video not used) (jen a
 30 gb storage
 
 advanced details -> 
-IAM instance profile -> Adminitrator access
+IAM instance profile -> Adminitrator access (role -> ec2 -> Administraor)
 
-disbaled ssh acces 
+disbaled ssh access
 
 USER DATA (jdk , jenkins , docker , terraform, aws cli , sonarqube conatiner , trivy) :
 (https://github.com/Shabbirsyed05/End-to-End-Kubernetes-Three-Tier-DevSecOps-Project/blob/master/Jenkins-Server-TF/tools-install.sh)
@@ -36,9 +36,11 @@ systemctl status jenkins.service (copy password)
 
 Manage Jenkins -> Plugins 
 aws credentials , pipeline: AWS Steps
+plugins -> terraform
+plugins -> pipeline:stage view
 
 Manage Jenkins -> Credentials -> System -> Global Cred -> 
-Kind (Aws Cred) ,ID (aws-cred) , access key , secret key
+Kind (Aws Credentials) ,ID (aws-creds) , access key , secret key
 
 IAM -> user -> admin -> access key
 
@@ -52,10 +54,15 @@ name (terraform) , install directory (/usr/bin/terraform) (from above)
 
 plugins -> pipeline:stage view
 
+Create a bucket with name "shabbir-bucket-for-devecops2"
+Create Dynamo table with name Lock-Files , primary key (LockID) 
+
 new job(infra) -> pipeline -> pipeline script (from git copy)
+https://github.com/Shabbirsyed05/EKS-Terraform-GitHub-Actions/blob/master/Jenkinsfile
 
+In 1st build -> it will just plan . In 2nd build , we need to select apply in parameters for getting it created.
 
-As EKS cluster is in private vpc . we are jump server to access eks cluster.
+As EKS cluster is in private vpc . we are using jump server to access eks cluster.
 
 DEV VPC will be created
 ```
@@ -63,7 +70,7 @@ DEV VPC will be created
 ```
 ubuntu 22  -> t2.medium
 no key pair
-vpc -> DEV
+vpc -> DEV (newly created one)
 subnet -> public
 
 30 gb storage
@@ -85,15 +92,17 @@ jenkins --verion
 
 aws -> eks -> kubernetes version(1.29)
 ```
+#### jenkins-server
 ```
 aws configure
 
 aws eks update-kubeconfig --name dev-medium-eks-cluster --region us-east-1
-kubectl (not install as of now)
+kubectl (not install as of now) (install it , if not installed)
 sudo apt update
 kubectl
+kubectl get nodes (it will give error . As it is only accessible from jump server)
 ```
-jump server :
+##### jump server :
 ```
 aws configure
 kubectl get nodes (error)
@@ -101,15 +110,20 @@ aws eks update-kubeconfig --name dev-medium-eks-cluster --region us-east-1
 kubectl get nodes 
 kubectl get all
 ```
-Loadbalancer and ARGO cd now:
+###### Loadbalancer and ARGO cd now:
 
 Download the policy for the LoadBalancer prerequisite:
 ```
 curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.5.4/docs/install/iam_policy.json
 ```
+Create the IAM policy using the below command
+```
+aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam_policy.json
+```
+
 ```
 cat im_policy.json
-aws -> awsLoad (gui)
+aws -> awsLoad (gui) AmazonEKSLoadBalancingPolicy()
 
 in simple terms what we are trying to do right now is uh eks cluster is a kubernetes cluster right and within the kubernetes Clusters we have pods running
 for example you have the Ingress controller running within the kubernetes cluster now how will a pod inside your eks cluster that is the Ingress controller pod create a load balancer
@@ -123,13 +137,13 @@ Create the IAM policy using the below command:
 ```
 aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam_policy.json
 ```
-Create OIDC Provider: (opt)
+Create OIDC Provider: (opt) (as it is configtured in github)
 ```
 eksctl utils associate-iam-oidc-provider --region=us-east-1 --cluster=Three-Tier-K8s-EKS-Cluster --approve
 ```
 Create a Service Account by using below command and replace your account ID with your one
 ```
-eksctl create iamserviceaccount --cluster=Three-Tier-K8s-EKS-Cluster --namespace=kube-system --name=aws-load-balancer-controller --role-name AmazonEKSLoadBalancerControllerRole --attach-policy-arn=arn:aws:iam::<your_account_id>:policy/AWSLoadBalancerControllerIAMPolicy --approve --region=us-east-1
+eksctl create iamserviceaccount --cluster=dev-medium-eks-cluster --namespace=kube-system --name=aws-load-balancer-controller --role-name AmazonEKSLoadBalancerControllerRole --attach-policy-arn=arn:aws:iam::<your_account_id>:policy/AWSLoadBalancerControllerIAMPolicy --approve --region=us-east-1
 ```
 ```
 kubectl get sa -n kube-system (if cant find loadbalancer delete it from cloudformation)
@@ -143,10 +157,10 @@ sudo snap install helm --classic
 helm repo add eks https://aws.github.io/eks-charts
 helm repo update eks
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system --set clusterName=my-cluster --set serviceAccount.create=false --set serviceAccount.name=aws-load-balancer-controller
-```
-```
-kubectl get deployment -n kube-system aws-load-balancer-controller
 
+kubectl get deployment -n kube-system aws-load-balancer-controller
+```
+```
 If the pods are getting Error or CrashLoopBackOff, then use the below command:
 helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set clusterName=<cluster-name> \
@@ -161,7 +175,7 @@ kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2
 
 kubectl get all -n argocd
 
-kubectl get -n argocd
+kubectl get svc -n argocd
 ```
 ```
 aws -> loadbalancer -> no loadbalancer
@@ -171,7 +185,7 @@ change type to LoadBalancer from ClusterIP
 
 aws -> loadbalancer -> can be seen
 
-copy DNS Name and paste in browser (ARCD ui )
+copy DNS Name by opening the LoadBalancer and paste in browser (ARCD ui )
 ```
 ```
 loadbalancer is is actually created by the cloud control manager component of eks cluster , 
@@ -244,7 +258,7 @@ Docker => Name (docker) , Install automatically (Install from docker.com)
 ```
 ```
 we havent configured webhook from jenkins to sonarqube (here 1st code analysis and 2nd stage quality gates)
-Manage Jenkins -> System -> SonarQube Installation => Name (sonar-server), Server URL : http://jenkins_ip:900
+Manage Jenkins -> System -> SonarQube Installation => Name (sonar-server), Server URL : http://jenkins_ip:9000
 server auth : sonar-token
 ```
 Pipeline :
@@ -259,9 +273,15 @@ sonarqube -> frontend -> check here all
 
 pipeline : 
 Job (three-tier-backend) -> pipeline -> pipeline (github -> jenkins pipeline -> frontend)
-# In code change the project_name from 3tier-frontend to frontend and commnet owasp by //
+# In code change the project_name from three-tier-backend to backend and commnet owasp by //
 # remove jdk from tools
-build
+build (if failing with no add and commit. Build it again)
+
+pipeline : 
+Job (three-tier-frontend) -> pipeline -> pipeline (github -> jenkins pipeline -> frontend)
+# In code change the project_name from three-tier-frontend to backend and commnet owasp by //
+# remove jdk from tools
+build (if failing with no add and commit. Build it again)
 
 after build check -> github -> kubernetes-manifest -> deployment.yaml (commit will be just ago)
 ```
@@ -273,7 +293,7 @@ type (git) , project (default) , URL (git url) -> connect
 
 on kubernetes cluster -> 1st databse then backend then frontend
 ArgoCD -> Application -> create Application =>
-name (three-tier-database) , project Name (default) , self heal (tick)
+name (three-tier-database) , project Name (default) , sync (automatic), self heal (tick)
 Source => URL (from dropdown) , Path (Kubernetes-Manifests-file/Database) (from github)
 Destination => Url (from dropdown) , Namespace (three-tier)
 ```
@@ -294,17 +314,17 @@ kubectl get pv -n three-tier
 ```
 ```
 ArgoCD -> Application -> create Application =>
-name (three-tier-backend, project Name (default) , self heal (tick)
-Source => URL (from dropdown) , Path (Kubernetes-Manifests-file/backend) (from github)
+name (three-tier-backend), project Name (default) , sync (automatic), self heal (tick)
+Source => URL (from dropdown) , Path (Kubernetes-Manifests-file/Backend) (from github)
 Destination => Url (from dropdown) , Namespace (three-tier)
 
 ArgoCD -> Application -> create Application =>
-name (three-tier-frontend, project Name (default) , self heal (tick)
-Source => URL (from dropdown) , Path (Kubernetes-Manifests-file/backend) (from github)
+name (three-tier-frontend), project Name (default) ,sync (automatic), self heal (tick)
+Source => URL (from dropdown) , Path (Kubernetes-Manifests-file/Frontend) (from github)
 Destination => Url (from dropdown) , Namespace (three-tier)
 
 ArgoCD -> Application -> create Application =>
-name (three-tier-ingress, project Name (default) , self heal (tick)
+name (three-tier-ingress), project Name (default) ,sync (automatic), self heal (tick)
 Source => URL (from dropdown) , Path (Kubernetes-Manifests-file/) (from github)
 Destination => Url (from dropdown) , Namespace (three-tier)
 ```
