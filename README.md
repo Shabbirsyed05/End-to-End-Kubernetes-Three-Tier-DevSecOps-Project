@@ -30,11 +30,12 @@ Custom Domain  -> integrate with route 53
 promethues -> datasource -> grafana
 ```
 MERN :
+```
 A MongoDB database
 An ExpressJS backend framework
 A NodeJS server
 A ReactJS frontend framework
-
+```
 ## Table of Contents
 - [Application Code](#application-code)
 - [Jenkins Pipeline Code](#jenkins-pipeline-code)
