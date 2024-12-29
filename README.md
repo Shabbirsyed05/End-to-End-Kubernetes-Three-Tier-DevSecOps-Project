@@ -36,6 +36,8 @@ An ExpressJS backend framework
 A NodeJS server
 A ReactJS frontend framework
 ```
+![image](https://github.com/user-attachments/assets/7641ed96-5b51-43ce-a32a-f28d42e083cd)
+
 ## Table of Contents
 - [Application Code](#application-code)
 - [Jenkins Pipeline Code](#jenkins-pipeline-code)
