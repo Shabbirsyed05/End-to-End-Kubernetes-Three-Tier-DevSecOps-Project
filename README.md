@@ -15,6 +15,26 @@ This repository hosts the implementation of a Three-Tier Web App using ReactJS, 
 Stage 1 :
 ![image](https://github.com/user-attachments/assets/38b817a5-ac48-4c5d-b22f-23e861211fa4)
 
+Stage 1 :
+```
+On ec2 -> will install jenkins and terraform. 
+with terraform -> will install eks cluster of 2 nodes in vpc .it will be accessible by jump server
+```
+Stage 2 :
+
+Jenkins + argo cd (ci + cd)
+
+Stage 3 :
+```
+Custom Domain  -> integrate with route 53
+promethues -> datasource -> grafana
+```
+MERN :
+A MongoDB database
+An ExpressJS backend framework
+A NodeJS server
+A ReactJS frontend framework
+
 ## Table of Contents
 - [Application Code](#application-code)
 - [Jenkins Pipeline Code](#jenkins-pipeline-code)
