@@ -261,13 +261,18 @@ we havent configured webhook from jenkins to sonarqube (here 1st code analysis a
 Manage Jenkins -> System -> SonarQube Installation => Name (sonar-server), Server URL : http://jenkins_ip:9000
 server auth : sonar-token
 ```
+
 Pipeline :
 
 Job (three-tier-frontent) -> pipeline -> pipeline (github -> jenkins pipeline -> frontend)
-# In code change the project_name from 3tier-frontend to frontend and commnet owasp by //
-# remove jdk from tools
+#### In code change the project_name from 3tier-frontend to frontend and commnet owasp by //
+##### remove jdk from tools
 build
 
+##### Change the image name in the ecr repository in frontend and backend deployment (image: 727646485718 to current name)
+https://github.com/Shabbirsyed05/End-to-End-Kubernetes-Three-Tier-DevSecOps-Project/blob/master/Kubernetes-Manifests-file/Frontend/deployment.yaml
+
+https://github.com/Shabbirsyed05/End-to-End-Kubernetes-Three-Tier-DevSecOps-Project/blob/master/Kubernetes-Manifests-file/Backend/deployment.yaml
 ```
 sonarqube -> frontend -> check here all
 
