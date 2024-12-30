@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: mainlb
+  name: mainlb1
   namespace: three-tier
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
